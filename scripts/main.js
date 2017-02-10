@@ -6,7 +6,12 @@ window.onload = mainLoad();
 var gridX;
 var gridY;
 var grid;
+var can;
 var cont;
+var gapTop;
+var gapBottom;
+var gapLeft;
+var gapRight;
 
 
 var fieldHeight;
@@ -19,8 +24,8 @@ function gridField(x, y, empty) {
 }
 
 function mainLoad() {
-	gridX = 5;
-	gridY = 5;
+	gridX = 15;
+	gridY = 15;
 	can = $("#main")[0];
 	can.width = 500;
 	can.height = 500;
@@ -41,8 +46,13 @@ function setTestData(){
 }
 
 function init() {
-	fieldHeight = can.height / gridY;
-	fieldWidth = can.width / gridX;
+	gapTop = 100;
+	gapBottom = 100;
+	gapLeft = 100;
+	gapRight= 100;
+	fieldHeight = (can.height - gapTop -gapBottom) / gridY;
+	fieldWidth = (can.width - gapLeft - gapRight) / gridX;
+	
 }
 
 function createGrid() {
@@ -66,11 +76,17 @@ function drawGrid() {
 		for (var j = 0; j < gridY; j++) {
 			if (grid[i][j] == 1) {
 				cont.fillStyle = '#009900';
-				cont.fillRect(i * fieldWidth, j * fieldHeight - 1,
+				cont.fillRect(i * fieldWidth  + gapLeft, j * fieldHeight  + gapTop,
 						1 * fieldWidth, 1 * fieldHeight);
 			}
-			cont.strokeRect(i * fieldWidth, j * fieldHeight - 1,
+			cont.strokeRect(i * fieldWidth + gapLeft, j * fieldHeight + gapTop,
 					1 * fieldWidth, 1 * fieldHeight);
 		}
 	}
 }
+
+
+
+
+
+
