@@ -24,8 +24,8 @@ function gridField(x, y, empty) {
 }
 
 function mainLoad() {
-	gridX = 15;
-	gridY = 15;
+	gridX = 7;
+	gridY = 7;
 	can = $("#main")[0];
 	can.width = 500;
 	can.height = 500;
@@ -37,12 +37,13 @@ function mainLoad() {
 		setTestData();
 	}
 	drawGrid();
+	breakGridDown();
 	// alert(grid[0][0]);
 }
 
 function setTestData(){
 	//testData
-	grid[2][4] = 1;
+	grid[1][1] = 1;
 }
 
 function init() {
@@ -79,9 +80,22 @@ function drawGrid() {
 				cont.fillRect(i * fieldWidth  + gapLeft, j * fieldHeight  + gapTop,
 						1 * fieldWidth, 1 * fieldHeight);
 			}
-			cont.strokeRect(i * fieldWidth + gapLeft, j * fieldHeight + gapTop,
+			cont.strokeRect(i * fieldWidth + gapLeft, j * fieldHeight + gapTop ,
 					1 * fieldWidth, 1 * fieldHeight);
 		}
+	}
+}
+
+function breakGridDown(){
+	var minSize = 2;
+	var maxSize = Math.floor((gridX * gridY) * 0.4);
+	
+	var tempGrid = grid;
+	
+	var size = Math.floor(Math.random() * (maxSize - minSize + 1 ) + minSize);
+	
+	for(var elem = 0; elem < size; elem++){
+		
 	}
 }
 
