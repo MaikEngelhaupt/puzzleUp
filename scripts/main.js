@@ -12,7 +12,7 @@ var gapTop;
 var gapBottom;
 var gapLeft;
 var gapRight;
-
+var parts = new Array;
 
 var fieldHeight;
 var fieldWidth;
@@ -85,8 +85,14 @@ function drawGrid() {
 	}
 }
 
+function part(color, elementList) {
+	this.elementList = elementList; 
+	this.color = color;
+}
 
-
+function element(x, y){
+	this.pos = new position(x, y);
+} 
 
 
 
