@@ -12,16 +12,19 @@ var gapTop;
 var gapBottom;
 var gapLeft;
 var gapRight;
-
+var parts = new Array;
 
 var fieldHeight;
 var fieldWidth;
 
-function gridField(x, y, empty) {
-	this.x = x;
-	this.y = y;
-	this.empty = empty;
+function part(color, elementList) {
+	this.elementList = elementList; 
+	this.color = color;
 }
+
+function element(x, y){
+	this.pos = new position(x, y);
+} 
 
 function mainLoad() {
 	gridX = 7;
