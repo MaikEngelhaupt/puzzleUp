@@ -102,6 +102,15 @@ function breakGridDown(){
 	}
 }
 
+function rotate(part){
+	var elements = part.elementList; 
+	var temp;
+	for(var i = 0; i < elements.length; i++){
+		temp = elements[i].x;
+		elements[i].x = elements[i].y;
+		elements[i].y = temp * (-1);
+	}	 
+}
 
 
 
