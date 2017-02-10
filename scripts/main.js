@@ -74,6 +74,17 @@ function createGrid() {
 	return rows;
 }
 
+function rotate(part){
+	var elements = part.elementList; 
+	var temp;
+	for(var i = 0; i < elements.length; i++){
+		temp = elements[i].x;
+		elements[i].x = elements[i].y;
+		elements[i].y = temp * (-1);
+	}	 
+
+}
+
 function drawGrid() {
 	cont.clearRect(0, 0, can.width, can.height);
 
@@ -111,7 +122,7 @@ function breakGridDown() {
 		if (next != null) {
 			tempElements.push(next);
 			alert("norNull");
-			tempGrid[next.x][next.y] = 1;
+			tempGrid[next.x][next.y] = 1; 
 		}
 		curr = next;
 
@@ -152,15 +163,12 @@ function chooseNext(neighbours, curr) {
 			options.push(i);
 	}
 
-
 	var res;
 
 	var rand = Math.floor(Math.random() * (options.length));
+	
 	var hmm = options[rand];
-//	alert("rand1");
-//	alert(options.length);
-//	alert(rand);
-//	alert(hmm);
+
 	switch (hmm) {
 	case 0: // left
 		res = new element(curr.x - 1, curr.y);
