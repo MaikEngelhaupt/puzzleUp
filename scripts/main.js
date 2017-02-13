@@ -1,5 +1,5 @@
 const
-DEBUG = true;
+DEBUG = false;
 $.mobile.loading().hide();
 window.onload = mainLoad();
 
@@ -12,7 +12,7 @@ var gapTop;
 var gapBottom;
 var gapLeft;
 var gapRight;
-var parts = new Array;
+var parts;
 
 var fieldHeight;
 var fieldWidth;
@@ -28,8 +28,9 @@ function element(x, y) {
 }
 
 function mainLoad() {
-	gridX = 7;
-	gridY = 7;
+	gridX = 100;
+	gridY = 100;
+	parts = [];
 	can = $("#main")[0];
 	can.width = 500;
 	can.height = 500;
@@ -42,6 +43,11 @@ function mainLoad() {
 	}
 	drawGrid();
 	breakGridDown();
+
+	parts.forEach(function(part){
+		drawPart(part);
+	});
+	
 	// alert(grid[0][0]);
 }
 
@@ -74,14 +80,14 @@ function createGrid() {
 	return rows;
 }
 
-function rotate(part){
-	var elements = part.elementList; 
+function rotate(part) {
+	var elements = part.elementList;
 	var temp;
-	for(var i = 0; i < elements.length; i++){
+	for (var i = 0; i < elements.length; i++) {
 		temp = elements[i].x;
 		elements[i].x = elements[i].y;
 		elements[i].y = temp * (-1);
-	}	 
+	}
 
 }
 
@@ -91,66 +97,106 @@ function drawGrid() {
 	for (var i = 0; i < gridX; i++) {
 		for (var j = 0; j < gridY; j++) {
 			if (grid[i][j] == 1) {
-				cont.fillStyle = '#009900';
-				cont.fillRect(i * fieldWidth + gapLeft, j * fieldHeight
-						+ gapTop, 1 * fieldWidth, 1 * fieldHeight);
+				draw(i, j, '#009900');
 			}
-			cont.strokeRect(i * fieldWidth + gapLeft, j * fieldHeight + gapTop,
-					1 * fieldWidth, 1 * fieldHeight);
+			draw(i, j);
 		}
 	}
 }
 
+function drawPart(part) {
+	part.elementList.forEach(function(elem) {
+		draw(elem.x, elem.y, part.color)
+	});
+}
+
+function draw(x, y, fill) {
+	if (fill != null) {
+		cont.fillStyle = fill;
+		cont.fillRect(x * fieldWidth + gapLeft, y * fieldHeight + gapTop,
+				1 * fieldWidth, 1 * fieldHeight);
+	}
+	cont.strokeRect(x * fieldWidth + gapLeft, y * fieldHeight + gapTop,
+			1 * fieldWidth, 1 * fieldHeight);
+};
+
 function breakGridDown() {
-	var minSize = 2;
+	var minSize = 1;
 	var maxSize = Math.floor((gridX * gridY) * 0.4);
 
 	var tempGrid = grid;
 
-	var size = Math.floor(Math.random() * (maxSize - minSize + 1) + minSize);
+	while (findFirstFree(tempGrid) != null) {
+		var size = Math
+				.floor(Math.random() * (maxSize - minSize + 1) + minSize);
+		var start = findFirstFree(tempGrid);
+		tempGrid[start.x][start.y] = 1
+		var tempElements = [ start ];
+		var curr = start;
+		for (var elem = 0; elem < size; elem++) {
 
-	var start = findFirstFree(tempGrid);
-	var tempElements = [ start ];
-	var curr = start;
-	for (var elem = 0; elem < size; elem++) {
+			// [left, right, up, down]
+			var neighbours = checkNeighbours(curr, tempGrid);
 
-		// [left, right, up, down]
-		var neighbours = checkNeighbours(curr, tempGrid);
+			var next = chooseNext(neighbours, curr);
 
-		var next = chooseNext(neighbours, curr);
-		alert(next);
-		if (next != null) {
-			tempElements.push(next);
-			alert("norNull");
-			tempGrid[next.x][next.y] = 1; 
+			if (next != null) {
+				tempElements.push(next);
+				tempGrid[next.x][next.y] = 1;
+			} else {
+				// tempElements.push(curr);
+				tempGrid[curr.x][curr.y] = 1;
+				break;
+			}
+			curr = next;
+
 		}
-		curr = next;
-
+		var newPart = new part(getRandomColor(), tempElements);
+		parts.push(newPart);
 	}
-	alert("end");
-	alert(tempElements[0].x);
+	// alert("asy");
+	// //alert(parts.toString());
+	//
+	// var res = "parts: \n";
+	// for(var i = 0; i < parts.length; i++){
+	// for(var j = 0; j < parts[i].length; j++){
+	// res = res +" "+ parts[i][j].x +" "+parts[i][j].y+" |";
+	// }
+	// res = res +"\n"
+	// }
+	// alert(res);
 }
 
-function findFirstFree(grid) {
-	for (var x = 0; x < grid.length; x++) {
-		for (var y = 0; y < grid[0].length; y++) {
-			if (grid[x][y] == 0) {
+function getRandomColor() {
+	var letters = '0123456789ABCDEF';
+	var color = '#';
+	for (var i = 0; i < 6; i++) {
+		color += letters[Math.floor(Math.random() * 16)];
+	}
+	return color;
+}
+
+function findFirstFree(tempGrid) {
+	for (var x = 0; x < tempGrid.length; x++) {
+		for (var y = 0; y < tempGrid.length; y++) {
+			if (tempGrid[x][y] == 0) {
 				return new element(x, y);
 			}
 		}
 	}
 }
 
-function checkNeighbours(element, tempGrid) {
+function checkNeighbours(elem, tempGrid) {
 	// [left, right, up, down]
 	var res = [ true, true, true, true ];
-	if (element.x - 1 < 0 || tempGrid[element.x - 1][element.y] == 1)
+
+	if (elem.x - 1 < 0 || tempGrid[elem.x - 1][elem.y] == 1)
 		res[0] = false;
-	if (element.x + 1 > gridX || tempGrid[element.x + 1][element.y] == 1)
+	if (elem.x + 1 >= gridX || tempGrid[elem.x + 1][elem.y] == 1)
 		res[1] = false;
-	if (element.y - 1 < 0 || tempGrid[element.x][element.y - 1] == 1)
+	if (elem.y - 1 < 0 || tempGrid[elem.x][elem.y - 1] == 1)
 		res[2] = false;
-	if (element.y + 1 > gridY || tempGrid[element.x][element.y + 1] == 1)
+	if (elem.y + 1 >= gridY || tempGrid[elem.x][elem.y + 1] == 1)
 		res[3] = false;
 
 	return res;
@@ -166,7 +212,7 @@ function chooseNext(neighbours, curr) {
 	var res;
 
 	var rand = Math.floor(Math.random() * (options.length));
-	
+
 	var hmm = options[rand];
 
 	switch (hmm) {
