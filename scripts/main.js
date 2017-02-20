@@ -1,5 +1,6 @@
 const
 DEBUG = false;
+DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; // Yeah, if true the grid will be filled with the puzzles, u know for enhancing snipping algorithms
 $.mobile.loading().hide();
 window.onload = mainLoad();
 
@@ -17,20 +18,64 @@ var parts;
 var fieldHeight;
 var fieldWidth;
 
-function part(color, elementList) {
+var ratioHeighWidthElement;
+
+var slots;
+var slotsElementSize;
+
+function part(color, elementList, x, y, partDimensions, slot) {
 	this.elementList = elementList;
 	this.color = color;
+	this.x = x;
+	this.y = y;
+	this.partDimensions = partDimensions; //[0] width; [1] height
+	this.slot = slot;
+	this.zoom;
+
+	this.setPos = function(x, y, zoom) {
+		this.x = x;
+		this.y = y;
+		this.zoom = zoom;
+		drawPart(this, slot);
+	}
+	
+	this.addElement = function(ele){
+		this.elementList.push(ele);
+	}
+	// this.clicked = function() {
+	//
+	// }
+	//
+	// this.elementList.forEach(function(elem) {
+	// elem.click(function() {
+	// alert("clicked");
+	// });
+	// });
+}
+
+function clickHandler() {
+
 }
 
 function element(x, y) {
 	this.x = x;
 	this.y = y;
+
+}
+
+function slot(x, y, sizeX, sizeY, part) {
+	this.x = x;
+	this.y = y;
+	this.sizeX = sizeX;
+	this.sizeY = sizeY;
+	this.part = part;
 }
 
 function mainLoad() {
-	gridX = 100;
-	gridY = 100;
+	gridX = 7;
+	gridY = 7;
 	parts = [];
+	slots = [];
 	can = $("#main")[0];
 	can.width = 500;
 	can.height = 500;
@@ -44,10 +89,59 @@ function mainLoad() {
 	drawGrid();
 	breakGridDown();
 
-	parts.forEach(function(part){
+	if (!DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS) {
+		createSlots();
+		// slots.forEach(function(elem){
+		// // alert(elem.x + " "+ elem.y+" "+elem.sizeX);
+		// drawSlots(elem.x, elem.y, elem.sizeX);
+		// });
+		getSlotElementSize();
+		alert(slotsElementSize);
+	}
+	parts.forEach(function(part) {
 		drawPart(part);
 	});
-	
+
+	can.addEventListener('click', function(event) {
+		var elemLeft = can.offsetLeft;
+		var elemTop = can.offsetTop;
+		var x = event.pageX - elemLeft;
+		var y = event.pageY - elemTop;
+		
+		var found = false;
+		// Collision detection between clicked offset and element.
+		parts.forEach(function(part) {
+			if(found){
+				return;
+			}
+			var jo = ( part.y + part.partDimensions[0] * part.zoom);
+//			alert(part.partDimensions[1] + " " + part.partDimensions[0]);
+			if (y > part.y 
+					&& y < part.y + (part.partDimensions[1] * part.zoom)
+					&& x > part.x
+					&& x < part.x + (part.partDimensions[0] * part.zoom)) {
+				part.elementList.forEach(function(element) {
+					if (y > slots[part.slot].y + element.y * slotsElementSize
+							&& y < slots[part.slot].y + element.y
+									* slotsElementSize + slotsElementSize
+							&& x > slots[part.slot].x + element.x
+									* slotsElementSize
+							&& x < slots[part.slot].x + element.x
+									* slotsElementSize + slotsElementSize) {
+
+						//add drag'n drop here
+						alert("found! " + part.slot);
+						
+						
+						
+						found = true;
+					}
+				})
+			}
+		});
+
+	}, false);
+
 	// alert(grid[0][0]);
 }
 
@@ -63,6 +157,67 @@ function init() {
 	gapRight = 100;
 	fieldHeight = (can.height - gapTop - gapBottom) / gridY;
 	fieldWidth = (can.width - gapLeft - gapRight) / gridX;
+	ratioHeighWidthElement = can.height / can.width;
+
+}
+
+function createSlots() {
+	var slotsSideHeight = can.height - gapTop - gapBottom;
+	var slotsSideWidth = gapLeft;
+	var slotsBottomWidth = can.width;
+	var slotsBottomHeight = gapBottom;
+	var slotsLeft;
+	var slotsRight;
+	var slotsBottom;
+	var slotsBottomStart = 0;
+
+	if (parts.length < 12) {
+		slotsBottomWidth = can.width - gapLeft - gapRight;
+		slotsLeft = slotsRight = 3;
+
+	} else {
+		var useableSpace = slotsSideHeight * 2 + slotsBottomWidth;
+		var factor = parts.length / useableSpace;
+		slotsLeft = slotsRight = Math.floor(factor * slotsSideHeight);
+	}
+	slotsBottom = parts.length - slotsLeft - slotsRight;
+
+	// alert(slotsLeft + " " +slotsRight + " " +slotsBottom + " "
+	// +parts.length);
+
+	var slotSizeLeftHeight = calcSlotSize(slotsSideHeight, slotsLeft);
+	var slotSizeLeft = slotSizeLeftHeight > gapLeft ? gapLeft
+			: slotSizeLeftHeight;
+	setSlots(slotsLeft, gapLeft / 2 - slotSizeLeft / 2, gapTop, 0, 1,
+			slotSizeLeft);
+
+	var slotSizeRightHeight = calcSlotSize(slotsSideHeight, slotsRight);
+	var slotSizeRight = slotSizeRightHeight > gapRight ? gapRight
+			: slotSizeRightHeight;
+	setSlots(slotsRight, can.width - slotsSideWidth / 2 - slotSizeRight / 2,
+			gapTop, 0, 1, slotSizeRight);
+
+	var slotSizeBottom = slotsBottom <= 3 ? gapBottom : calcSlotSize(
+			slotsBottomWidth, slotsBottom);
+	var slotsBottomStart = slotsBottom <= 3 ? gapLeft
+			+ ((3 - slotsBottom) * slotSizeBottom) / 2
+			: parts.length < 12 ? gapLeft : 0;
+	setSlots(slotsBottom, slotsBottomStart, can.height - slotsBottomHeight / 2
+			- slotSizeBottom / 2, 1, 0, slotSizeBottom);
+}
+
+function calcSlotSize(slotsSize, slotCount) {
+	// alert(slotsSize+" "+ slotCount);
+	return Math.floor(slotsSize / slotCount);
+
+}
+
+function setSlots(slotsCount, x, y, changeX, changeY, size) {
+	for (var i = 0; i < slotsCount; i++) {
+		var slotX = (x + (i * changeX * size));
+		var slotY = (y + (i * changeY * size));
+		slots.push(new slot(slotX, slotY, size, size));
+	}
 
 }
 
@@ -97,34 +252,109 @@ function drawGrid() {
 	for (var i = 0; i < gridX; i++) {
 		for (var j = 0; j < gridY; j++) {
 			if (grid[i][j] == 1) {
-				draw(i, j, '#009900');
+				// drawOnField(i, j, '#009900');
+				drawOnFixedSpot(i, j, fieldWidth, '#009900');
 			}
-			draw(i, j);
+			drawOnFixedSpot(i, j, fieldWidth);
 		}
 	}
 }
 
 function drawPart(part) {
-	part.elementList.forEach(function(elem) {
-		draw(elem.x, elem.y, part.color)
-	});
+	if (part.slot == null) {
+		part.elementList.forEach(function(elem) {
+			// drawOnField(part.x + elem.x, part.y + elem.y, part.color);
+			drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
+					part.color);
+		});
+	} else {
+		drawPartInSlot(slots[part.slot], part);
+	}
 }
 
-function draw(x, y, fill) {
+function drawSlots(x, y, size) {
+	cont.strokeRect(x, y, size, size);
+}
+
+function getSlotElementSize() {
+	parts.forEach(function(elem) {
+
+		partWidth = slots[elem.slot].sizeX / (elem.partDimensions[0] + 1);
+		partHeight = slots[elem.slot].sizeY / (elem.partDimensions[1] + 1);
+
+		currSmallest = partWidth > partHeight ? partHeight : partWidth;
+		slotsElementSize = slotsElementSize == null ? currSmallest
+				: slotsElementSize > currSmallest ? currSmallest
+						: slotsElementSize;
+	});
+
+}
+
+// TODO: clusterfuck beseitigen
+
+function drawPartInSlot(slot, part) {
+	// alert(slot.sizeX +" "+ part.partDimensions[0] + " " +
+	partWidth = slot.sizeX / (part.partDimensions[0] + 1);
+	partHeight = slot.sizeY / (part.partDimensions[1] + 1);
+
+	elemSize = partWidth > partHeight ? partHeight : partWidth;
+
+	// alert("partWidth "+partWidth+" partHeight "+partHeight+" elemSize "+elemSize);
+
+	var vertDiff = 0;
+	part.elementList.forEach(function(elem) {
+		vertDiff = vertDiff < elem.y ? vertDiff : elem.y;
+	});
+
+	// alert(vertDiff);
+	part.x = slot.x;
+	part.y = slot.y;
+	part.zoom = slotsElementSize;
+	part.elementList.forEach(function(elem) {
+
+		drawOnFixedSpot(elem.x, elem.y - vertDiff, slotsElementSize,
+				part.color, slot);
+	});
+
+}
+
+function drawOnFixedSpot(x, y, zoom, fill, spot) {
+
+
+	var gapX = gapLeft;
+	var gapY = gapTop;
+	if (spot != null) {
+		gapX = spot.x;
+		gapY = spot.y;
+	}
+	var newX = (x * zoom + gapX) / zoom;
+	var newY = (y * zoom + gapY) / zoom;
+	// alert(newY);
+	// alert(fieldWidth);
+	draw(newX, newY, zoom, fill);
+};
+
+function draw(x, y, zoom, fill) {
+	// alert see drawinProcess
+//	 alert( ratioHeighWidthElement);
 	if (fill != null) {
 		cont.fillStyle = fill;
-		cont.fillRect(x * fieldWidth + gapLeft, y * fieldHeight + gapTop,
-				1 * fieldWidth, 1 * fieldHeight);
+		cont.fillRect(x * zoom +1, ((y * zoom + 1) * ratioHeighWidthElement),
+				zoom - 2, (zoom - 2) * ratioHeighWidthElement);
+	} else {
+		cont.strokeRect(x * zoom, ((y * zoom) * ratioHeighWidthElement), zoom,
+				zoom * ratioHeighWidthElement);
 	}
-	cont.strokeRect(x * fieldWidth + gapLeft, y * fieldHeight + gapTop,
-			1 * fieldWidth, 1 * fieldHeight);
-};
+
+}
 
 function breakGridDown() {
 	var minSize = 1;
 	var maxSize = Math.floor((gridX * gridY) * 0.4);
 
 	var tempGrid = grid;
+	var slotNum = 0;
+	var tempParts = [];
 
 	while (findFirstFree(tempGrid) != null) {
 		var size = Math
@@ -146,14 +376,38 @@ function breakGridDown() {
 			} else {
 				// tempElements.push(curr);
 				tempGrid[curr.x][curr.y] = 1;
+				if(tempElements.length == 1){
+					var neighbours = getNeighbours(tempElements[0], tempParts);
+//					alert(neighbours);
+					var rand = Math.floor(Math.random() * (neighbours.length));
+					neighbours[rand].addElement(tempElements[0]);
+					tempElements = null;
+				}
 				break;
 			}
 			curr = next;
 
 		}
-		var newPart = new part(getRandomColor(), tempElements);
-		parts.push(newPart);
+		// normalizeParts(tempElements, start)
+		if(tempElements != null){
+		tempParts.push(new part(null, tempElements, start.x, start.y));
+	
+		}
 	}
+//alert("aye");
+tempParts.forEach(function(elem){
+	if (DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS) {
+		var newPart = new part(getRandomColor(), elem.elementList, 0, 0,
+				getPartDimension(elem.elementList, new element(elem.x, elem.y)));
+	} else {
+//		alert(elem.x);
+		var newPart = new part(getRandomColor(), normalizeParts(
+				elem.elementList, new element(elem.x, elem.y)), 0, 0, 
+				getPartDimension(elem.elementList, new element(elem.x, elem.y)), slotNum);
+		slotNum++;
+	}
+	parts.push(newPart);
+	});
 	// alert("asy");
 	// //alert(parts.toString());
 	//
@@ -165,6 +419,46 @@ function breakGridDown() {
 	// res = res +"\n"
 	// }
 	// alert(res);
+}
+
+function normalizeParts(elemList, start) {
+	var res = [];
+	var north = 0;
+	var south = 0;
+	var east = 0;
+	var west = 0;
+	elemList.forEach(function(elem) {
+		var x = elem.x - start.x;
+		var y = elem.y - start.y;
+		north = y < north ? y : north;
+
+		south = y > south ? y : south;
+
+		east = x < east ? x : east;
+
+		west = x > west ? x : west;
+		res.push(new element(x, y));
+	});
+	return res;
+}
+
+function getPartDimension(elemList, start) {
+	var north = 0;
+	var south = 0;
+	var east = 0;
+	var west = 0;
+	elemList.forEach(function(elem) {
+		var x = elem.x - start.x;
+		var y = elem.y - start.y;
+
+		north = y < north ? y : north;
+		south = y > south ? y : south;
+		east = x < east ? x : east;
+		west = x > west ? x : west;
+	});
+	partHeight = Math.abs(north) + Math.abs(south) + 1;
+	partWidth = Math.abs(east) + Math.abs(west) + 1;
+	return [ partWidth, partHeight ];
 }
 
 function getRandomColor() {
@@ -202,6 +496,21 @@ function checkNeighbours(elem, tempGrid) {
 	return res;
 }
 
+function getNeighbours(elem, partList){
+	var res = [];
+	partList.forEach(function(part){
+		part.elementList.forEach(function(element){
+			if(		(elem.x - 1 == element.x && elem.y == element.y)
+					||(elem.x + 1 == element.x && elem.y == element.y)
+					||(elem.x == element.x && elem.y +1 == element.y)
+					||(elem.x == element.x && elem.y -1 == element.y)){
+				res.push(part);
+			}
+		})
+	});
+	return res;
+}
+
 function chooseNext(neighbours, curr) {
 	var options = [];
 	for (var i = 0; i < neighbours.length; i++) {
@@ -213,9 +522,9 @@ function chooseNext(neighbours, curr) {
 
 	var rand = Math.floor(Math.random() * (options.length));
 
-	var hmm = options[rand];
+	var dir = options[rand];
 
-	switch (hmm) {
+	switch (dir) {
 	case 0: // left
 		res = new element(curr.x - 1, curr.y);
 		break;
