@@ -1,6 +1,6 @@
 const
 DEBUG = false;
-DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; // Yeah, if true the grid will be filled with the puzzles, u know for enhancing snipping algorithms
+DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; //Yeah, if true the grid will be filled with the puzzles, u know for enhancing snipping algorithms
 $.mobile.loading().hide();
 window.onload = mainLoad();
 
@@ -14,6 +14,13 @@ var gapBottom;
 var gapLeft;
 var gapRight;
 var parts;
+var rect;
+var offsetX;
+var offsetY;
+var isMouseClick = false;
+var isTouch = false;
+var elementWidth; 
+var elementHeight;
 
 var fieldHeight;
 var fieldWidth;
@@ -60,7 +67,7 @@ function clickHandler() {
 function element(x, y) {
 	this.x = x;
 	this.y = y;
-
+	this.isDragging = false;
 }
 
 function slot(x, y, sizeX, sizeY, part) {
@@ -72,13 +79,22 @@ function slot(x, y, sizeX, sizeY, part) {
 }
 
 function mainLoad() {
-	gridX = 7;
-	gridY = 7;
+	gridX = 3;
+	gridY = 3;
 	parts = [];
 	slots = [];
 	can = $("#main")[0];
 	can.width = 500;
 	can.height = 500;
+	rect = can.getBoundingClientRect();
+	offsetX = rect.left;
+	offsetY = rect.top;
+	can.addEventListener('mousedown', mouseDown, false);
+	can.addEventListener('mousemove', mouseMove, false);
+	can.addEventListener('mouseup', mouseUp, false)
+	can.addEventListener("touchstart", touchStart, false);
+	can.addEventListener("touchend", touchEnd, false);
+	can.addEventListener("touchmove", touchMove, false);
 	init();
 	cont = can.getContext("2d");
 	grid = createGrid();
@@ -96,51 +112,51 @@ function mainLoad() {
 		// drawSlots(elem.x, elem.y, elem.sizeX);
 		// });
 		getSlotElementSize();
-		alert(slotsElementSize);
+		//alert(slotsElementSize);
 	}
 	parts.forEach(function(part) {
 		drawPart(part);
 	});
 
-	can.addEventListener('click', function(event) {
-		var elemLeft = can.offsetLeft;
-		var elemTop = can.offsetTop;
-		var x = event.pageX - elemLeft;
-		var y = event.pageY - elemTop;
-		
-		var found = false;
-		// Collision detection between clicked offset and element.
-		parts.forEach(function(part) {
-			if(found){
-				return;
-			}
-			var jo = ( part.y + part.partDimensions[0] * part.zoom);
-//			alert(part.partDimensions[1] + " " + part.partDimensions[0]);
-			if (y > part.y 
-					&& y < part.y + (part.partDimensions[1] * part.zoom)
-					&& x > part.x
-					&& x < part.x + (part.partDimensions[0] * part.zoom)) {
-				part.elementList.forEach(function(element) {
-					if (y > slots[part.slot].y + element.y * slotsElementSize
-							&& y < slots[part.slot].y + element.y
-									* slotsElementSize + slotsElementSize
-							&& x > slots[part.slot].x + element.x
-									* slotsElementSize
-							&& x < slots[part.slot].x + element.x
-									* slotsElementSize + slotsElementSize) {
-
-						//add drag'n drop here
-						alert("found! " + part.slot);
-						
-						
-						
-						found = true;
-					}
-				})
-			}
-		});
-
-	}, false);
+//	can.addEventListener('click', function(event) {
+//		var elemLeft = can.offsetLeft;
+//		var elemTop = can.offsetTop;
+//		var x = event.pageX - elemLeft;
+//		var y = event.pageY - elemTop;
+//		
+//		var found = false;
+//		// Collision detection between clicked offset and element.
+//		parts.forEach(function(part) {
+//			if(found){
+//				return;
+//			}
+//			var jo = ( part.y + part.partDimensions[0] * part.zoom);
+////			alert(part.partDimensions[1] + " " + part.partDimensions[0]);
+//			if (y > part.y 
+//					&& y < part.y + (part.partDimensions[1] * part.zoom)
+//					&& x > part.x
+//					&& x < part.x + (part.partDimensions[0] * part.zoom)) {
+//				part.elementList.forEach(function(element) {
+//					if (y > slots[part.slot].y + element.y * slotsElementSize
+//							&& y < slots[part.slot].y + element.y
+//									* slotsElementSize + slotsElementSize
+//							&& x > slots[part.slot].x + element.x
+//									* slotsElementSize
+//							&& x < slots[part.slot].x + element.x
+//									* slotsElementSize + slotsElementSize) {
+//
+//						//add drag'n drop here
+//						//alert("found! " + part.slot);
+//						
+//						
+//						
+//						found = true;
+//					}
+//				})
+//			}
+//		});
+//
+//	}, false);
 
 	// alert(grid[0][0]);
 }
@@ -246,6 +262,13 @@ function rotate(part) {
 
 }
 
+function drawAll(){
+	drawGrid();
+	parts.forEach(function(part) {
+		drawPart(part);
+	});
+}
+
 function drawGrid() {
 	cont.clearRect(0, 0, can.width, can.height);
 
@@ -337,6 +360,8 @@ function drawOnFixedSpot(x, y, zoom, fill, spot) {
 function draw(x, y, zoom, fill) {
 	// alert see drawinProcess
 //	 alert( ratioHeighWidthElement);
+	elementWidth = zoom - 2;
+	elementHeight = (zoom - 2) * ratioHeighWidthElement;
 	if (fill != null) {
 		cont.fillStyle = fill;
 		cont.fillRect(x * zoom +1, ((y * zoom + 1) * ratioHeighWidthElement),
@@ -541,3 +566,155 @@ function chooseNext(neighbours, curr) {
 
 	return res;
 }
+
+
+function mouseDown(e){
+	var selectedPart;
+	e.preventDefault();
+    e.stopPropagation();
+    
+    var mx = parseInt(e.clientX - offsetX);
+    var my = parseInt(e.clientY - offsetY);
+      
+    isMouseClick = false;
+    
+    //Funktion die die Elemente wieder normal groß macht
+    
+    parts.forEach(function(part){
+    	part.elementList.forEach(function(elem) { 
+    		//elem.x und elem.y sollten eigentlich die wirkliche Position der Elemente sein
+    		//elemnetWidth und elementHeight sind die größe der Elemente
+    		if(mx > elem.x && mx < elem.x + elementWidth && my > elem.y && my < elem.y + elementHeight){
+    			isMouseClick = true;
+    			selectedPart = part;
+    		}
+    	});
+	});
+    if(selectedPart != undefined){
+    	selectedPart.elementList.forEach(function(elem){
+    		elem.isDragging = true;
+    	});
+    }
+    
+	
+    startX = mx;
+    startY = my;
+}
+
+function mouseMove(e){
+	if(isMouseClick){
+
+		e.preventDefault();
+	    e.stopPropagation();
+	    
+	    var mx = parseInt(e.clientX - offsetX);
+	    var my = parseInt(e.clientY - offsetY);
+	    
+	    var dx = mx - startX;
+	    var dy = my - startY;
+	    
+	    parts.forEach(function(part){
+	    	part.elementList.forEach(function(elem) {
+	    		if(elem.isDragging){
+	    			//auch hier brauch man die wahre Position der Elemente
+	    			elem.x += dx;
+	    			elem.y += dy;
+	    		}
+	    	});
+		});
+	    
+	    drawAll();
+	    
+	    startX = mx;
+	    startY = my;
+	}
+}
+
+function mouseUp(e){
+	e.preventDefault();
+    e.stopPropagation();
+
+	isMouseClick = false;
+	parts.forEach(function(part){
+		part.elementList.forEach(function(elem) {
+			elem.isDragging=false;
+		});
+	});
+}
+
+
+
+function touchStart(e){
+	var selectedPart;
+	e.preventDefault();
+    e.stopPropagation();
+    
+    
+    var mx = parseInt(e.touches[0].pageX);
+    var my = parseInt(e.touches[0].pageY);
+    isTouch = false;
+    
+  //Funktion die die Elemente wieder normal groß macht
+    
+    parts.forEach(function(part){
+    	part.elementList.forEach(function(elem) {
+    		//elem.x und elem.y sollten eigentlich die wirkliche Position der Elemente sein
+    		//elemnetWidth und elementHeight sind die größe der Elemente 
+    		if(mx > elem.x && mx < elem.x + elementWidth && my > elem.y && my < elem.y + elementHeight){
+    			isTouch = true;
+    			selectedPart = part;
+    		}
+    	});
+	});
+
+    if(selectedPart != undefined){
+    	selectedPart.elementList.forEach(function(elem){
+    		elem.isDragging = true;
+    	});
+    }
+    startX = mx;
+    startY = my;
+}
+
+function touchMove(e){
+	if(isTouch){
+		e.preventDefault();
+	    e.stopPropagation();
+	    
+	    var mx = parseInt(e.touches[0].pageX);
+	    var my = parseInt(e.touches[0].pageY);
+	    
+	    var dx = mx - startX;
+	    var dy = my - startY;
+	    
+	    parts.forEach(function(part){
+	    	part.elementList.forEach(function(elem) {
+	    		if(elem.isDragging){
+	    			//auch hier brauch man die wahre Position der Elemente
+	    			elem.x += dx;
+	    			elem.y += dy;
+	    		}
+	    	});
+		});
+	    
+	    drawAll();
+	    
+	    startX = mx;
+	    startY = my;
+	}
+}
+
+function touchEnd(e){
+	e.preventDefault();
+    e.stopPropagation();
+    
+	isTouch = false;
+	parts.forEach(function(part){
+		part.elementList.forEach(function(elem) {
+			elem.isDragging=false;
+		});
+	});
+}
+
+
+
