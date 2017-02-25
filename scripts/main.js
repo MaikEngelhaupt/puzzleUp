@@ -1,11 +1,16 @@
 const
 DEBUG = false;
-DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; // Yeah, if true the grid will be filled with the puzzles, u know for enhancing snipping algorithms
+DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; // Yeah, if true the grid will
+												// be filled with the puzzles, u
+												// know for enhancing snipping
+												// algorithms
 $.mobile.loading().hide();
 window.onload = mainLoad();
 
 var gridX;
 var gridY;
+var gridWidth;
+var gridHeight;
 var grid;
 var can;
 var cont;
@@ -28,18 +33,27 @@ function part(color, elementList, x, y, partDimensions, slot) {
 	this.color = color;
 	this.x = x;
 	this.y = y;
-	this.partDimensions = partDimensions; //[0] width; [1] height
+	this.partDimensions = partDimensions; // [0] width; [1] height
 	this.slot = slot;
 	this.zoom;
+	this.moving = false;
 
 	this.setPos = function(x, y, zoom) {
+		// TODO: Draw not only is slot nul
 		this.x = x;
 		this.y = y;
-		this.zoom = zoom;
-		drawPart(this, slot);
+		// this.slot = null;
+		if (zoom != null) {
+			this.zoom = zoom;
+		}
+		// alert(this.x +" "+ this.y);
+		// drawPart(this);
+		update();
+		// draw(this.x, this.y, this.zoom, this.color);
+		// alert(this.x +" "+ this.y +" "+ this.zoom +" "+ this.color);
 	}
-	
-	this.addElement = function(ele){
+
+	this.addElement = function(ele) {
 		this.elementList.push(ele);
 	}
 	// this.clicked = function() {
@@ -69,6 +83,18 @@ function slot(x, y, sizeX, sizeY, part) {
 	this.sizeX = sizeX;
 	this.sizeY = sizeY;
 	this.part = part;
+}
+
+
+function mouseHandler(event, part){
+//	alert("bla");
+	var mouseX = event.pageX;
+	var mouseY = event.pageY;
+	
+	var tempX = mouseX - ((part.partDimensions[0] * part.zoom)/2);
+	var tempY = mouseY - ((part.partDimensions[1] * part.zoom)/2);
+	
+	part.setPos(tempX, tempY, getZoom(mouseX,mouseY));
 }
 
 function mainLoad() {
@@ -107,17 +133,17 @@ function mainLoad() {
 		var elemTop = can.offsetTop;
 		var x = event.pageX - elemLeft;
 		var y = event.pageY - elemTop;
-		
+
 		var found = false;
 		// Collision detection between clicked offset and element.
 		parts.forEach(function(part) {
-			if(found){
+			part.moving = false;
+			if (found) {
 				return;
 			}
-			var jo = ( part.y + part.partDimensions[0] * part.zoom);
-//			alert(part.partDimensions[1] + " " + part.partDimensions[0]);
-			if (y > part.y 
-					&& y < part.y + (part.partDimensions[1] * part.zoom)
+			var jo = (part.y + part.partDimensions[0] * part.zoom);
+			// alert(part.partDimensions[1] + " " + part.partDimensions[0]);
+			if (y > part.y && y < part.y + (part.partDimensions[1] * part.zoom)
 					&& x > part.x
 					&& x < part.x + (part.partDimensions[0] * part.zoom)) {
 				part.elementList.forEach(function(element) {
@@ -129,11 +155,16 @@ function mainLoad() {
 							&& x < slots[part.slot].x + element.x
 									* slotsElementSize + slotsElementSize) {
 
-						//add drag'n drop here
-						alert("found! " + part.slot);
-						
-						
-						
+						// add drag'n drop here
+						// alert("found! " + part.slot);
+
+						part.moving = true;
+						can.addEventListener('mousemove', function(event){
+							mouseHandler(event, part);
+						});
+
+						// part.setPos(2, 2);
+
 						found = true;
 					}
 				})
@@ -143,6 +174,16 @@ function mainLoad() {
 	}, false);
 
 	// alert(grid[0][0]);
+}
+
+
+
+function getZoom(x, y){
+//	alert(x + " " + y + " "+ gridHeight +" "+gridY);
+	if(x >= gapLeft && x <= gapLeft + gridWidth && y >= gapTop && y <= gapTop + gridHeight)
+		return fieldHeight;
+	else
+		return slotsElementSize;
 }
 
 function setTestData() {
@@ -155,8 +196,10 @@ function init() {
 	gapBottom = 100;
 	gapLeft = 100;
 	gapRight = 100;
-	fieldHeight = (can.height - gapTop - gapBottom) / gridY;
-	fieldWidth = (can.width - gapLeft - gapRight) / gridX;
+	gridWidth = can.width - gapLeft - gapRight;
+	gridHeight = can.height - gapTop - gapBottom;
+	fieldHeight = gridHeight / gridY;
+	fieldWidth = gridWidth / gridX;
 	ratioHeighWidthElement = can.height / can.width;
 
 }
@@ -251,21 +294,25 @@ function drawGrid() {
 
 	for (var i = 0; i < gridX; i++) {
 		for (var j = 0; j < gridY; j++) {
-			if (grid[i][j] == 1) {
-				// drawOnField(i, j, '#009900');
-				drawOnFixedSpot(i, j, fieldWidth, '#009900');
-			}
+//			if (grid[i][j] == 1) {
+//				// drawOnField(i, j, '#009900');
+//				drawOnFixedSpot(i, j, fieldWidth, '#009900');
+//			}
 			drawOnFixedSpot(i, j, fieldWidth);
 		}
 	}
 }
 
+// TODO: Draw not only is slot null
 function drawPart(part) {
 	if (part.slot == null) {
 		part.elementList.forEach(function(elem) {
 			// drawOnField(part.x + elem.x, part.y + elem.y, part.color);
-			drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
-					part.color);
+			// drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
+			// part.color);
+			var newX = (part.x + elem.x);
+			var newY = (part.y + elem.y);
+			draw(newX, newY, part.zoom, part.color);
 		});
 	} else {
 		drawPartInSlot(slots[part.slot], part);
@@ -299,7 +346,8 @@ function drawPartInSlot(slot, part) {
 
 	elemSize = partWidth > partHeight ? partHeight : partWidth;
 
-	// alert("partWidth "+partWidth+" partHeight "+partHeight+" elemSize "+elemSize);
+	// alert("partWidth "+partWidth+" partHeight "+partHeight+" elemSize
+	// "+elemSize);
 
 	var vertDiff = 0;
 	part.elementList.forEach(function(elem) {
@@ -320,7 +368,6 @@ function drawPartInSlot(slot, part) {
 
 function drawOnFixedSpot(x, y, zoom, fill, spot) {
 
-
 	var gapX = gapLeft;
 	var gapY = gapTop;
 	if (spot != null) {
@@ -336,16 +383,37 @@ function drawOnFixedSpot(x, y, zoom, fill, spot) {
 
 function draw(x, y, zoom, fill) {
 	// alert see drawinProcess
-//	 alert( ratioHeighWidthElement);
+	// alert( "draw");
 	if (fill != null) {
 		cont.fillStyle = fill;
-		cont.fillRect(x * zoom +1, ((y * zoom + 1) * ratioHeighWidthElement),
+		cont.fillRect(x * zoom + 1, ((y * zoom + 1) * ratioHeighWidthElement),
 				zoom - 2, (zoom - 2) * ratioHeighWidthElement);
 	} else {
 		cont.strokeRect(x * zoom, ((y * zoom) * ratioHeighWidthElement), zoom,
 				zoom * ratioHeighWidthElement);
 	}
 
+}
+
+function update() {
+	cont.clearRect(0, 0, can.width, can.height);
+	drawGrid();
+	parts.forEach(function(part) {
+		if (part.moving) {
+			part.elementList.forEach(function(elem) {
+				// drawOnField(part.x + elem.x, part.y + elem.y, part.color);
+				// drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
+				// part.color);
+				var newX = (part.x / part.zoom + elem.x);
+				var newY = (part.y / part.zoom + elem.y);
+				// alert(part.zoom);
+				draw(newX, newY, part.zoom, part.color);
+			});
+		} else {
+			drawPartInSlot(slots[part.slot], part);
+
+		}
+	});
 }
 
 function breakGridDown() {
@@ -376,9 +444,9 @@ function breakGridDown() {
 			} else {
 				// tempElements.push(curr);
 				tempGrid[curr.x][curr.y] = 1;
-				if(tempElements.length == 1){
+				if (tempElements.length == 1) {
 					var neighbours = getNeighbours(tempElements[0], tempParts);
-//					alert(neighbours);
+					// alert(neighbours);
 					var rand = Math.floor(Math.random() * (neighbours.length));
 					neighbours[rand].addElement(tempElements[0]);
 					tempElements = null;
@@ -389,24 +457,26 @@ function breakGridDown() {
 
 		}
 		// normalizeParts(tempElements, start)
-		if(tempElements != null){
-		tempParts.push(new part(null, tempElements, start.x, start.y));
-	
+		if (tempElements != null) {
+			tempParts.push(new part(null, tempElements, start.x, start.y));
+
 		}
 	}
-//alert("aye");
-tempParts.forEach(function(elem){
-	if (DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS) {
-		var newPart = new part(getRandomColor(), elem.elementList, 0, 0,
-				getPartDimension(elem.elementList, new element(elem.x, elem.y)));
-	} else {
-//		alert(elem.x);
-		var newPart = new part(getRandomColor(), normalizeParts(
-				elem.elementList, new element(elem.x, elem.y)), 0, 0, 
-				getPartDimension(elem.elementList, new element(elem.x, elem.y)), slotNum);
-		slotNum++;
-	}
-	parts.push(newPart);
+	// alert("aye");
+	tempParts.forEach(function(elem) {
+		if (DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS) {
+			var newPart = new part(getRandomColor(), elem.elementList, 0, 0,
+					getPartDimension(elem.elementList, new element(elem.x,
+							elem.y)));
+		} else {
+			// alert(elem.x);
+			var newPart = new part(getRandomColor(), normalizeParts(
+					elem.elementList, new element(elem.x, elem.y)), 0, 0,
+					getPartDimension(elem.elementList, new element(elem.x,
+							elem.y)), slotNum);
+			slotNum++;
+		}
+		parts.push(newPart);
 	});
 	// alert("asy");
 	// //alert(parts.toString());
@@ -496,14 +566,14 @@ function checkNeighbours(elem, tempGrid) {
 	return res;
 }
 
-function getNeighbours(elem, partList){
+function getNeighbours(elem, partList) {
 	var res = [];
-	partList.forEach(function(part){
-		part.elementList.forEach(function(element){
-			if(		(elem.x - 1 == element.x && elem.y == element.y)
-					||(elem.x + 1 == element.x && elem.y == element.y)
-					||(elem.x == element.x && elem.y +1 == element.y)
-					||(elem.x == element.x && elem.y -1 == element.y)){
+	partList.forEach(function(part) {
+		part.elementList.forEach(function(element) {
+			if ((elem.x - 1 == element.x && elem.y == element.y)
+					|| (elem.x + 1 == element.x && elem.y == element.y)
+					|| (elem.x == element.x && elem.y + 1 == element.y)
+					|| (elem.x == element.x && elem.y - 1 == element.y)) {
 				res.push(part);
 			}
 		})
