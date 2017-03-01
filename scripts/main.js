@@ -28,12 +28,13 @@ var ratioHeighWidthElement;
 var slots;
 var slotsElementSize;
 
-function part(color, elementList, x, y, partDimensions, slot) {
+function part(color, elementList, x, y, partDimensions, slot, offset) {
 	this.elementList = elementList;
 	this.color = color;
 	this.x = x;
 	this.y = y;
 	this.partDimensions = partDimensions; // [0] width; [1] height
+	this.offset = offset;
 	this.slot = slot;
 	this.zoom;
 	this.moving = false;
@@ -42,29 +43,19 @@ function part(color, elementList, x, y, partDimensions, slot) {
 		// TODO: Draw not only is slot nul
 		this.x = x;
 		this.y = y;
-		// this.slot = null;
+
 		if (zoom != null) {
 			this.zoom = zoom;
 		}
-		// alert(this.x +" "+ this.y);
-		// drawPart(this);
+
 		update();
-		// draw(this.x, this.y, this.zoom, this.color);
-		// alert(this.x +" "+ this.y +" "+ this.zoom +" "+ this.color);
+
 	}
 
 	this.addElement = function(ele) {
 		this.elementList.push(ele);
 	}
-	// this.clicked = function() {
-	//
-	// }
-	//
-	// this.elementList.forEach(function(elem) {
-	// elem.click(function() {
-	// alert("clicked");
-	// });
-	// });
+
 }
 
 function clickHandler() {
@@ -86,16 +77,18 @@ function slot(x, y, sizeX, sizeY, part) {
 }
 
 
-function mouseHandler(event, part){
+function mouseHandler(event){
 //	alert("bla");
 	var mouseX = event.pageX;
 	var mouseY = event.pageY;
 	
-	var tempX = mouseX - ((part.partDimensions[0] * part.zoom)/2);
-	var tempY = mouseY - ((part.partDimensions[1] * part.zoom)/2);
-	
-	part.setPos(tempX, tempY, getZoom(mouseX,mouseY));
+	var tempX = mouseX - ((selectedPart.partDimensions[0] * selectedPart.zoom)/2);
+	var tempY = mouseY - ((selectedPart.partDimensions[1] * selectedPart.zoom)/2);
+
+	selectedPart.setPos(tempX, tempY, getZoom(mouseX,mouseY));
 }
+
+var selectedPart;
 
 function mainLoad() {
 	gridX = 7;
@@ -124,11 +117,13 @@ function mainLoad() {
 		getSlotElementSize();
 		alert(slotsElementSize);
 	}
+
 	parts.forEach(function(part) {
 		drawPart(part);
 	});
 
 	can.addEventListener('click', function(event) {
+		can.removeEventListener("mousemove", mouseHandler);
 		var elemLeft = can.offsetLeft;
 		var elemTop = can.offsetTop;
 		var x = event.pageX - elemLeft;
@@ -137,6 +132,7 @@ function mainLoad() {
 		var found = false;
 		// Collision detection between clicked offset and element.
 		parts.forEach(function(part) {
+//			rotate(part);
 			part.moving = false;
 			if (found) {
 				return;
@@ -159,9 +155,8 @@ function mainLoad() {
 						// alert("found! " + part.slot);
 
 						part.moving = true;
-						can.addEventListener('mousemove', function(event){
-							mouseHandler(event, part);
-						});
+						selectedPart = part;
+						can.addEventListener('mousemove',mouseHandler);
 
 						// part.setPos(2, 2);
 
@@ -170,7 +165,7 @@ function mainLoad() {
 				})
 			}
 		});
-
+		update();
 	}, false);
 
 	// alert(grid[0][0]);
@@ -281,11 +276,15 @@ function createGrid() {
 function rotate(part) {
 	var elements = part.elementList;
 	var temp;
+
 	for (var i = 0; i < elements.length; i++) {
 		temp = elements[i].x;
 		elements[i].x = elements[i].y;
 		elements[i].y = temp * (-1);
 	}
+	temp = part.partDimensions[0];
+	part.partDimensions[0] = part.partDimensions[1];
+	part.partDimensions[1] = temp;
 
 }
 
@@ -349,18 +348,19 @@ function drawPartInSlot(slot, part) {
 	// alert("partWidth "+partWidth+" partHeight "+partHeight+" elemSize
 	// "+elemSize);
 
-	var vertDiff = 0;
-	part.elementList.forEach(function(elem) {
-		vertDiff = vertDiff < elem.y ? vertDiff : elem.y;
-	});
+//	var vertDiff = 0;
+//	part.elementList.forEach(function(elem) {
+//		vertDiff = vertDiff < elem.y ? vertDiff : elem.y;
+//	});
 
 	// alert(vertDiff);
-	part.x = slot.x;
-	part.y = slot.y;
 	part.zoom = slotsElementSize;
+	part.x = slot.x;//
+	part.y = slot.y;
 	part.elementList.forEach(function(elem) {
-
-		drawOnFixedSpot(elem.x, elem.y - vertDiff, slotsElementSize,
+		elem.x += ((slot.sizeX)/part.zoom /2) - (part.partDimensions[0]/2);
+		elem.y += ((slot.sizeY)/part.zoom /2) - (part.partDimensions[1]/2);
+		drawOnFixedSpot(elem.x, elem.y, slotsElementSize,
 				part.color, slot);
 	});
 
@@ -405,6 +405,7 @@ function update() {
 				// drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
 				// part.color);
 				var newX = (part.x / part.zoom + elem.x);
+//				alert(newX);
 				var newY = (part.y / part.zoom + elem.y);
 				// alert(part.zoom);
 				draw(newX, newY, part.zoom, part.color);
@@ -470,6 +471,9 @@ function breakGridDown() {
 							elem.y)));
 		} else {
 			// alert(elem.x);
+			
+	
+
 			var newPart = new part(getRandomColor(), normalizeParts(
 					elem.elementList, new element(elem.x, elem.y)), 0, 0,
 					getPartDimension(elem.elementList, new element(elem.x,
@@ -497,6 +501,7 @@ function normalizeParts(elemList, start) {
 	var south = 0;
 	var east = 0;
 	var west = 0;
+
 	elemList.forEach(function(elem) {
 		var x = elem.x - start.x;
 		var y = elem.y - start.y;
@@ -509,6 +514,16 @@ function normalizeParts(elemList, start) {
 		west = x > west ? x : west;
 		res.push(new element(x, y));
 	});
+	
+	var vertDiff = 0;
+	res.forEach(function(elem) {
+		vertDiff = vertDiff < elem.y ? vertDiff : elem.y;
+	});
+	
+	for(i = 0; i < res.length; i++ ){
+		res[i].y -= vertDiff;
+		
+	}
 	return res;
 }
 
