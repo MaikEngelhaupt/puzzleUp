@@ -1,9 +1,6 @@
 const
 DEBUG = false;
-DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; // Yeah, if true the grid will
-												// be filled with the puzzles, u
-												// know for enhancing snipping
-												// algorithms
+DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; //Yeah, if true the grid will be filled with the puzzles, u know for enhancing snipping algorithms
 $.mobile.loading().hide();
 window.onload = mainLoad();
 
@@ -19,6 +16,13 @@ var gapBottom;
 var gapLeft;
 var gapRight;
 var parts;
+var rect;
+var offsetX;
+var offsetY;
+var isMouseClick = false;
+var isTouch = false;
+var elementWidth; 
+var elementHeight;
 
 var fieldHeight;
 var fieldWidth;
@@ -58,7 +62,7 @@ function part(color, elementList, x, y, partDimensions, slot, offset) {
 function element(x, y) {
 	this.x = x;
 	this.y = y;
-
+	this.isDragging = false;
 }
 
 function slot(x, y, sizeX, sizeY, part) {
@@ -91,6 +95,15 @@ function mainLoad() {
 	can = $("#main")[0];
 	can.width = 500;
 	can.height = 500;
+	rect = can.getBoundingClientRect();
+	offsetX = rect.left;
+	offsetY = rect.top;
+	can.addEventListener('mousedown', mouseDown, false);
+	can.addEventListener('mousemove', mouseMove, false);
+	can.addEventListener('mouseup', mouseUp, false)
+	can.addEventListener("touchstart", touchStart, false);
+	can.addEventListener("touchend", touchEnd, false);
+	can.addEventListener("touchmove", touchMove, false);
 	init();
 	cont = can.getContext("2d");
 	grid = createGrid();
@@ -105,9 +118,7 @@ function mainLoad() {
 		createSlots();
 		getSlotElementSize();
 
-		alert(slotsElementSize);
 	}
-	
 
 	setPartsinSlot();
 	update();
@@ -254,6 +265,17 @@ function createGrid() {
 	return rows;
 }
 
+function rotate(part) {
+	var elements = part.elementList;
+	var temp;
+	for (var i = 0; i < elements.length; i++) {
+		temp = elements[i].x;
+		elements[i].x = elements[i].y;
+		elements[i].y = temp * (-1);
+	}
+
+}
+
 function drawGrid() {
 	cont.clearRect(0, 0, can.width, can.height);
 
@@ -316,7 +338,7 @@ function drawOnFixedSpot(x, y, zoom, fill, spot) {
 
 function draw(x, y, zoom, fill) {
 	// alert see drawinProcess
-	// alert( "draw");
+
 	if (fill != null) {
 		cont.fillStyle = fill;
 		cont.fillRect(x, y,
@@ -532,3 +554,155 @@ function chooseNext(neighbours, curr) {
 
 	return res;
 }
+
+
+function mouseDown(e){
+	var selectedPart;
+	e.preventDefault();
+    e.stopPropagation();
+    
+    var mx = parseInt(e.clientX - offsetX);
+    var my = parseInt(e.clientY - offsetY);
+      
+    isMouseClick = false;
+    
+    //Funktion die die Elemente wieder normal groß macht
+    
+    parts.forEach(function(part){
+    	part.elementList.forEach(function(elem) { 
+    		//elem.x und elem.y sollten eigentlich die wirkliche Position der Elemente sein
+    		//elemnetWidth und elementHeight sind die größe der Elemente
+    		if(mx > elem.x && mx < elem.x + elementWidth && my > elem.y && my < elem.y + elementHeight){
+    			isMouseClick = true;
+    			selectedPart = part;
+    		}
+    	});
+	});
+    if(selectedPart != undefined){
+    	selectedPart.elementList.forEach(function(elem){
+    		elem.isDragging = true;
+    	});
+    }
+    
+	
+    startX = mx;
+    startY = my;
+}
+
+function mouseMove(e){
+	if(isMouseClick){
+
+		e.preventDefault();
+	    e.stopPropagation();
+	    
+	    var mx = parseInt(e.clientX - offsetX);
+	    var my = parseInt(e.clientY - offsetY);
+	    
+	    var dx = mx - startX;
+	    var dy = my - startY;
+	    
+	    parts.forEach(function(part){
+	    	part.elementList.forEach(function(elem) {
+	    		if(elem.isDragging){
+	    			//auch hier brauch man die wahre Position der Elemente
+	    			elem.x += dx;
+	    			elem.y += dy;
+	    		}
+	    	});
+		});
+	    
+	    drawAll();
+	    
+	    startX = mx;
+	    startY = my;
+	}
+}
+
+function mouseUp(e){
+	e.preventDefault();
+    e.stopPropagation();
+
+	isMouseClick = false;
+	parts.forEach(function(part){
+		part.elementList.forEach(function(elem) {
+			elem.isDragging=false;
+		});
+	});
+}
+
+
+
+function touchStart(e){
+	var selectedPart;
+	e.preventDefault();
+    e.stopPropagation();
+    
+    
+    var mx = parseInt(e.touches[0].pageX);
+    var my = parseInt(e.touches[0].pageY);
+    isTouch = false;
+    
+  //Funktion die die Elemente wieder normal groß macht
+    
+    parts.forEach(function(part){
+    	part.elementList.forEach(function(elem) {
+    		//elem.x und elem.y sollten eigentlich die wirkliche Position der Elemente sein
+    		//elemnetWidth und elementHeight sind die größe der Elemente 
+    		if(mx > elem.x && mx < elem.x + elementWidth && my > elem.y && my < elem.y + elementHeight){
+    			isTouch = true;
+    			selectedPart = part;
+    		}
+    	});
+	});
+
+    if(selectedPart != undefined){
+    	selectedPart.elementList.forEach(function(elem){
+    		elem.isDragging = true;
+    	});
+    }
+    startX = mx;
+    startY = my;
+}
+
+function touchMove(e){
+	if(isTouch){
+		e.preventDefault();
+	    e.stopPropagation();
+	    
+	    var mx = parseInt(e.touches[0].pageX);
+	    var my = parseInt(e.touches[0].pageY);
+	    
+	    var dx = mx - startX;
+	    var dy = my - startY;
+	    
+	    parts.forEach(function(part){
+	    	part.elementList.forEach(function(elem) {
+	    		if(elem.isDragging){
+	    			//auch hier brauch man die wahre Position der Elemente
+	    			elem.x += dx;
+	    			elem.y += dy;
+	    		}
+	    	});
+		});
+	    
+	    drawAll();
+	    
+	    startX = mx;
+	    startY = my;
+	}
+}
+
+function touchEnd(e){
+	e.preventDefault();
+    e.stopPropagation();
+    
+	isTouch = false;
+	parts.forEach(function(part){
+		part.elementList.forEach(function(elem) {
+			elem.isDragging=false;
+		});
+	});
+}
+
+
+
