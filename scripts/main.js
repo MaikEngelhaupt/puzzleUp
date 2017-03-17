@@ -31,34 +31,27 @@ var slotsElementSize;
 function part(color, elementList, x, y, partDimensions, slot, offset) {
 	this.elementList = elementList;
 	this.color = color;
-	this.x = x;
+	this.slot = slot;
+	this.x = x
 	this.y = y;
 	this.partDimensions = partDimensions; // [0] width; [1] height
 	this.offset = offset;
-	this.slot = slot;
 	this.zoom;
 	this.moving = false;
 
 	this.setPos = function(x, y, zoom) {
-		// TODO: Draw not only is slot nul
 		this.x = x;
 		this.y = y;
-
+		
 		if (zoom != null) {
 			this.zoom = zoom;
 		}
-
 		update();
-
 	}
-
+	
 	this.addElement = function(ele) {
 		this.elementList.push(ele);
 	}
-
-}
-
-function clickHandler() {
 
 }
 
@@ -110,18 +103,14 @@ function mainLoad() {
 
 	if (!DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS) {
 		createSlots();
-		// slots.forEach(function(elem){
-		// // alert(elem.x + " "+ elem.y+" "+elem.sizeX);
-		// drawSlots(elem.x, elem.y, elem.sizeX);
-		// });
 		getSlotElementSize();
+
 		alert(slotsElementSize);
 	}
+	
 
-	parts.forEach(function(part) {
-		drawPart(part);
-	});
-
+	setPartsinSlot();
+	update();
 	can.addEventListener('click', function(event) {
 		can.removeEventListener("mousemove", mouseHandler);
 		var elemLeft = can.offsetLeft;
@@ -130,36 +119,28 @@ function mainLoad() {
 		var y = event.pageY - elemTop;
 
 		var found = false;
+		setPartsinSlot();
 		// Collision detection between clicked offset and element.
 		parts.forEach(function(part) {
-//			rotate(part);
 			part.moving = false;
 			if (found) {
 				return;
 			}
-			var jo = (part.y + part.partDimensions[0] * part.zoom);
-			// alert(part.partDimensions[1] + " " + part.partDimensions[0]);
-			if (y > part.y && y < part.y + (part.partDimensions[1] * part.zoom)
-					&& x > part.x
-					&& x < part.x + (part.partDimensions[0] * part.zoom)) {
-				part.elementList.forEach(function(element) {
-					if (y > slots[part.slot].y + element.y * slotsElementSize
-							&& y < slots[part.slot].y + element.y
-									* slotsElementSize + slotsElementSize
-							&& x > slots[part.slot].x + element.x
-									* slotsElementSize
-							&& x < slots[part.slot].x + element.x
-									* slotsElementSize + slotsElementSize) {
-
+			if (	y > part.y 
+				&&	y < part.y + (part.partDimensions[1] * part.zoom)
+				&&	x > part.x
+				&&	x < part.x + (part.partDimensions[0] * part.zoom)) {
+				part.elementList.forEach(function(element) { 
+					if (	y > part.y + element.y * part.zoom
+						&&	y < part.y + element.y * part.zoom + part.zoom
+						&&	x > part.x + element.x * part.zoom
+						&&	x < part.x + element.x * part.zoom + part.zoom) {
 						// add drag'n drop here
-						// alert("found! " + part.slot);
-
+						
 						part.moving = true;
 						selectedPart = part;
 						can.addEventListener('mousemove',mouseHandler);
-
-						// part.setPos(2, 2);
-
+						
 						found = true;
 					}
 				})
@@ -168,13 +149,18 @@ function mainLoad() {
 		update();
 	}, false);
 
-	// alert(grid[0][0]);
 }
 
-
+function setPartsinSlot(){
+	parts.forEach(function(part){
+		part.setPos(
+				(slots[part.slot].x + slots[part.slot].sizeX/2) - ((part.partDimensions[0]/2))*slotsElementSize,
+				(slots[part.slot].y + slots[part.slot].sizeY/2) - ((part.partDimensions[1]/2))*slotsElementSize, 
+				slotsElementSize);
+	});
+}
 
 function getZoom(x, y){
-//	alert(x + " " + y + " "+ gridHeight +" "+gridY);
 	if(x >= gapLeft && x <= gapLeft + gridWidth && y >= gapTop && y <= gapTop + gridHeight)
 		return fieldHeight;
 	else
@@ -220,9 +206,6 @@ function createSlots() {
 	}
 	slotsBottom = parts.length - slotsLeft - slotsRight;
 
-	// alert(slotsLeft + " " +slotsRight + " " +slotsBottom + " "
-	// +parts.length);
-
 	var slotSizeLeftHeight = calcSlotSize(slotsSideHeight, slotsLeft);
 	var slotSizeLeft = slotSizeLeftHeight > gapLeft ? gapLeft
 			: slotSizeLeftHeight;
@@ -245,7 +228,6 @@ function createSlots() {
 }
 
 function calcSlotSize(slotsSize, slotCount) {
-	// alert(slotsSize+" "+ slotCount);
 	return Math.floor(slotsSize / slotCount);
 
 }
@@ -261,7 +243,7 @@ function setSlots(slotsCount, x, y, changeX, changeY, size) {
 
 function createGrid() {
 	var rows = [];
-
+	
 	for (var i = 0; i < gridX; i++) {
 		var column = [];
 		for (var j = 0; j < gridY; j++) {
@@ -269,8 +251,17 @@ function createGrid() {
 		}
 		rows.push(column);
 	}
-
 	return rows;
+}
+
+function drawGrid() {
+	cont.clearRect(0, 0, can.width, can.height);
+
+	for (var i = 0; i < gridX; i++) {
+		for (var j = 0; j < gridY; j++) {
+			drawOnFixedSpot(i, j, fieldWidth);
+		}
+	}
 }
 
 function rotate(part) {
@@ -288,36 +279,6 @@ function rotate(part) {
 
 }
 
-function drawGrid() {
-	cont.clearRect(0, 0, can.width, can.height);
-
-	for (var i = 0; i < gridX; i++) {
-		for (var j = 0; j < gridY; j++) {
-//			if (grid[i][j] == 1) {
-//				// drawOnField(i, j, '#009900');
-//				drawOnFixedSpot(i, j, fieldWidth, '#009900');
-//			}
-			drawOnFixedSpot(i, j, fieldWidth);
-		}
-	}
-}
-
-// TODO: Draw not only is slot null
-function drawPart(part) {
-	if (part.slot == null) {
-		part.elementList.forEach(function(elem) {
-			// drawOnField(part.x + elem.x, part.y + elem.y, part.color);
-			// drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
-			// part.color);
-			var newX = (part.x + elem.x);
-			var newY = (part.y + elem.y);
-			draw(newX, newY, part.zoom, part.color);
-		});
-	} else {
-		drawPartInSlot(slots[part.slot], part);
-	}
-}
-
 function drawSlots(x, y, size) {
 	cont.strokeRect(x, y, size, size);
 }
@@ -333,35 +294,9 @@ function getSlotElementSize() {
 				: slotsElementSize > currSmallest ? currSmallest
 						: slotsElementSize;
 	});
-
-}
-
-// TODO: clusterfuck beseitigen
-
-function drawPartInSlot(slot, part) {
-	// alert(slot.sizeX +" "+ part.partDimensions[0] + " " +
-	partWidth = slot.sizeX / (part.partDimensions[0] + 1);
-	partHeight = slot.sizeY / (part.partDimensions[1] + 1);
-
-	elemSize = partWidth > partHeight ? partHeight : partWidth;
-
-	// alert("partWidth "+partWidth+" partHeight "+partHeight+" elemSize
-	// "+elemSize);
-
-//	var vertDiff = 0;
-//	part.elementList.forEach(function(elem) {
-//		vertDiff = vertDiff < elem.y ? vertDiff : elem.y;
-//	});
-
-	// alert(vertDiff);
-	part.zoom = slotsElementSize;
-	part.x = slot.x;//
-	part.y = slot.y;
-	part.elementList.forEach(function(elem) {
-		elem.x += ((slot.sizeX)/part.zoom /2) - (part.partDimensions[0]/2);
-		elem.y += ((slot.sizeY)/part.zoom /2) - (part.partDimensions[1]/2);
-		drawOnFixedSpot(elem.x, elem.y, slotsElementSize,
-				part.color, slot);
+	
+	parts.forEach(function(elem) {
+		elem.zoom = slotsElementSize;
 	});
 
 }
@@ -376,8 +311,6 @@ function drawOnFixedSpot(x, y, zoom, fill, spot) {
 	}
 	var newX = (x * zoom + gapX) / zoom;
 	var newY = (y * zoom + gapY) / zoom;
-	// alert(newY);
-	// alert(fieldWidth);
 	draw(newX, newY, zoom, fill);
 };
 
@@ -386,8 +319,8 @@ function draw(x, y, zoom, fill) {
 	// alert( "draw");
 	if (fill != null) {
 		cont.fillStyle = fill;
-		cont.fillRect(x * zoom + 1, ((y * zoom + 1) * ratioHeighWidthElement),
-				zoom - 2, (zoom - 2) * ratioHeighWidthElement);
+		cont.fillRect(x, y,
+				zoom, zoom );
 	} else {
 		cont.strokeRect(x * zoom, ((y * zoom) * ratioHeighWidthElement), zoom,
 				zoom * ratioHeighWidthElement);
@@ -398,22 +331,13 @@ function draw(x, y, zoom, fill) {
 function update() {
 	cont.clearRect(0, 0, can.width, can.height);
 	drawGrid();
+	
 	parts.forEach(function(part) {
-		if (part.moving) {
-			part.elementList.forEach(function(elem) {
-				// drawOnField(part.x + elem.x, part.y + elem.y, part.color);
-				// drawOnFixedSpot(part.x + elem.x, part.y + elem.y, fieldWidth,
-				// part.color);
-				var newX = (part.x / part.zoom + elem.x);
-//				alert(newX);
-				var newY = (part.y / part.zoom + elem.y);
-				// alert(part.zoom);
-				draw(newX, newY, part.zoom, part.color);
-			});
-		} else {
-			drawPartInSlot(slots[part.slot], part);
-
-		}
+		part.elementList.forEach(function(elem) {
+			var newX = (part.x + elem.x * part.zoom );
+			var newY = (part.y + elem.y * part.zoom );
+			draw(newX, newY, part.zoom, part.color);
+		});
 	});
 }
 
@@ -443,7 +367,6 @@ function breakGridDown() {
 				tempElements.push(next);
 				tempGrid[next.x][next.y] = 1;
 			} else {
-				// tempElements.push(curr);
 				tempGrid[curr.x][curr.y] = 1;
 				if (tempElements.length == 1) {
 					var neighbours = getNeighbours(tempElements[0], tempParts);
@@ -457,23 +380,17 @@ function breakGridDown() {
 			curr = next;
 
 		}
-		// normalizeParts(tempElements, start)
 		if (tempElements != null) {
 			tempParts.push(new part(null, tempElements, start.x, start.y));
 
 		}
 	}
-	// alert("aye");
 	tempParts.forEach(function(elem) {
 		if (DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS) {
 			var newPart = new part(getRandomColor(), elem.elementList, 0, 0,
 					getPartDimension(elem.elementList, new element(elem.x,
 							elem.y)));
 		} else {
-			// alert(elem.x);
-			
-	
-
 			var newPart = new part(getRandomColor(), normalizeParts(
 					elem.elementList, new element(elem.x, elem.y)), 0, 0,
 					getPartDimension(elem.elementList, new element(elem.x,
@@ -482,17 +399,6 @@ function breakGridDown() {
 		}
 		parts.push(newPart);
 	});
-	// alert("asy");
-	// //alert(parts.toString());
-	//
-	// var res = "parts: \n";
-	// for(var i = 0; i < parts.length; i++){
-	// for(var j = 0; j < parts[i].length; j++){
-	// res = res +" "+ parts[i][j].x +" "+parts[i][j].y+" |";
-	// }
-	// res = res +"\n"
-	// }
-	// alert(res);
 }
 
 function normalizeParts(elemList, start) {
