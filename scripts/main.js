@@ -1,6 +1,9 @@
 const
 DEBUG = false;
-DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; //Yeah, if true the grid will be filled with the puzzles, u know for enhancing snipping algorithms
+DRAW_ME_LIKE_ONE_OF_YOUR_FRENCH_GIRLS = false; // Yeah, if true the grid will
+// be filled with the puzzles, u
+// know for enhancing snipping
+// algorithms
 $.mobile.loading().hide();
 window.onload = mainLoad();
 
@@ -21,7 +24,7 @@ var offsetX;
 var offsetY;
 var isMouseClick = false;
 var isTouch = false;
-var elementWidth; 
+var elementWidth;
 var elementHeight;
 
 var fieldHeight;
@@ -42,17 +45,19 @@ function part(color, elementList, x, y, partDimensions, slot, offset) {
 	this.offset = offset;
 	this.zoom;
 	this.moving = false;
+	this.gridX;
+	this.gridY;
 
 	this.setPos = function(x, y, zoom) {
 		this.x = x;
 		this.y = y;
-		
+
 		if (zoom != null) {
 			this.zoom = zoom;
 		}
 		update();
 	}
-	
+
 	this.addElement = function(ele) {
 		this.elementList.push(ele);
 	}
@@ -65,6 +70,12 @@ function element(x, y) {
 	this.isDragging = false;
 }
 
+function gridCell(x, y) {
+	this.x = x;
+	this.y = y;
+	this.val = 0;
+}
+
 function slot(x, y, sizeX, sizeY, part) {
 	this.x = x;
 	this.y = y;
@@ -73,23 +84,24 @@ function slot(x, y, sizeX, sizeY, part) {
 	this.part = part;
 }
 
-
-function mouseHandler(event){
-//	alert("bla");
+function mouseHandler(event) {
+	// alert("bla");
 	var mouseX = event.pageX;
 	var mouseY = event.pageY;
-	
-	var tempX = mouseX - ((selectedPart.partDimensions[0] * selectedPart.zoom)/2);
-	var tempY = mouseY - ((selectedPart.partDimensions[1] * selectedPart.zoom)/2);
 
-	selectedPart.setPos(tempX, tempY, getZoom(mouseX,mouseY));
+	var tempX = mouseX
+			- ((selectedPart.partDimensions[0] * selectedPart.zoom) / 2);
+	var tempY = mouseY
+			- ((selectedPart.partDimensions[1] * selectedPart.zoom) / 2);
+
+	selectedPart.setPos(tempX, tempY, getZoom(mouseX, mouseY));
 }
 
 var selectedPart;
 
 function mainLoad() {
-	gridX = 7;
-	gridY = 7;
+	gridX = 15;
+	gridY = 15;
 	parts = [];
 	slots = [];
 	can = $("#main")[0];
@@ -122,57 +134,82 @@ function mainLoad() {
 
 	setPartsinSlot();
 	update();
-	can.addEventListener('click', function(event) {
-		can.removeEventListener("mousemove", mouseHandler);
-		var elemLeft = can.offsetLeft;
-		var elemTop = can.offsetTop;
-		var x = event.pageX - elemLeft;
-		var y = event.pageY - elemTop;
-
-		var found = false;
-		setPartsinSlot();
-		// Collision detection between clicked offset and element.
-		parts.forEach(function(part) {
-			part.moving = false;
-			if (found) {
-				return;
-			}
-			if (	y > part.y 
-				&&	y < part.y + (part.partDimensions[1] * part.zoom)
-				&&	x > part.x
-				&&	x < part.x + (part.partDimensions[0] * part.zoom)) {
-				part.elementList.forEach(function(element) { 
-					if (	y > part.y + element.y * part.zoom
-						&&	y < part.y + element.y * part.zoom + part.zoom
-						&&	x > part.x + element.x * part.zoom
-						&&	x < part.x + element.x * part.zoom + part.zoom) {
-						// add drag'n drop here
-						
-						part.moving = true;
-						selectedPart = part;
-						can.addEventListener('mousemove',mouseHandler);
-						
-						found = true;
-					}
-				})
-			}
-		});
-		update();
-	}, false);
+	// can.addEventListener('click', function(event) {
+	// can.removeEventListener("mousemove", mouseHandler);
+	// var elemLeft = can.offsetLeft;
+	// var elemTop = can.offsetTop;
+	// var x = event.pageX - elemLeft;
+	// var y = event.pageY - elemTop;
+	//
+	// var found = false;
+	// setPartsinSlot();
+	// // Collision detection between clicked offset and element.
+	// parts.forEach(function(part) {
+	// part.moving = false;
+	// if (found) {
+	// return;
+	// }
+	// if (y > part.y && y < part.y + (part.partDimensions[1] * part.zoom)
+	// && x > part.x
+	// && x < part.x + (part.partDimensions[0] * part.zoom)) {
+	// part.elementList.forEach(function(element) {
+	// if (y > part.y + element.y * part.zoom
+	// && y < part.y + element.y * part.zoom + part.zoom
+	// && x > part.x + element.x * part.zoom
+	// && x < part.x + element.x * part.zoom + part.zoom) {
+	// // add drag'n drop here
+	//
+	// part.moving = true;
+	// selectedPart = part;
+	// can.addEventListener('mousemove', mouseHandler);
+	//
+	// found = true;
+	// }
+	// })
+	// }
+	// });
+	// update();
+	// }, false);
 
 }
 
-function setPartsinSlot(){
+function randomizeSlots(count){
+	var slotNumbers = Array();
+	
+	for(var i = 0; i < count; i++){
+		slotNumbers.push(i);
+	}
+	
 	parts.forEach(function(part){
-		part.setPos(
-				(slots[part.slot].x + slots[part.slot].sizeX/2) - ((part.partDimensions[0]/2))*slotsElementSize,
-				(slots[part.slot].y + slots[part.slot].sizeY/2) - ((part.partDimensions[1]/2))*slotsElementSize, 
+		var num = Math.floor((Math.random() * (slotNumbers.length-1)));
+		part.slot = slotNumbers[num];
+		slotNumbers.splice(num, 1);
+		console.log(num);
+		console.log(slotNumbers);
+	});
+}
+
+function setPartInSlot(part) {
+	part.setPos((slots[part.slot].x + slots[part.slot].sizeX / 2)
+			- ((part.partDimensions[0] / 2)) * slotsElementSize,
+			(slots[part.slot].y + slots[part.slot].sizeY / 2)
+					- ((part.partDimensions[1] / 2)) * slotsElementSize,
+			slotsElementSize);
+}
+
+function setPartsinSlot() {
+	parts.forEach(function(part) {
+		part.setPos((slots[part.slot].x + slots[part.slot].sizeX / 2)
+				- ((part.partDimensions[0] / 2)) * slotsElementSize,
+				(slots[part.slot].y + slots[part.slot].sizeY / 2)
+						- ((part.partDimensions[1] / 2)) * slotsElementSize,
 				slotsElementSize);
 	});
 }
 
-function getZoom(x, y){
-	if(x >= gapLeft && x <= gapLeft + gridWidth && y >= gapTop && y <= gapTop + gridHeight)
+function getZoom(x, y) {
+	if (x >= gapLeft && x <= gapLeft + gridWidth && y >= gapTop
+			&& y <= gapTop + gridHeight)
 		return fieldHeight;
 	else
 		return slotsElementSize;
@@ -254,7 +291,7 @@ function setSlots(slotsCount, x, y, changeX, changeY, size) {
 
 function createGrid() {
 	var rows = [];
-	
+
 	for (var i = 0; i < gridX; i++) {
 		var column = [];
 		for (var j = 0; j < gridY; j++) {
@@ -265,16 +302,16 @@ function createGrid() {
 	return rows;
 }
 
-function rotate(part) {
-	var elements = part.elementList;
-	var temp;
-	for (var i = 0; i < elements.length; i++) {
-		temp = elements[i].x;
-		elements[i].x = elements[i].y;
-		elements[i].y = temp * (-1);
-	}
-
-}
+// function rotate(part) {
+// var elements = part.elementList;
+// var temp;
+// for (var i = 0; i < elements.length; i++) {
+// temp = elements[i].x;
+// elements[i].x = elements[i].y;
+// elements[i].y = temp * (-1);
+// }
+//
+// }
 
 function drawGrid() {
 	cont.clearRect(0, 0, can.width, can.height);
@@ -316,7 +353,7 @@ function getSlotElementSize() {
 				: slotsElementSize > currSmallest ? currSmallest
 						: slotsElementSize;
 	});
-	
+
 	parts.forEach(function(elem) {
 		elem.zoom = slotsElementSize;
 	});
@@ -341,8 +378,7 @@ function draw(x, y, zoom, fill) {
 
 	if (fill != null) {
 		cont.fillStyle = fill;
-		cont.fillRect(x, y,
-				zoom, zoom );
+		cont.fillRect(x, y, zoom, zoom);
 	} else {
 		cont.strokeRect(x * zoom, ((y * zoom) * ratioHeighWidthElement), zoom,
 				zoom * ratioHeighWidthElement);
@@ -353,21 +389,33 @@ function draw(x, y, zoom, fill) {
 function update() {
 	cont.clearRect(0, 0, can.width, can.height);
 	drawGrid();
-	
+
 	parts.forEach(function(part) {
 		part.elementList.forEach(function(elem) {
-			var newX = (part.x + elem.x * part.zoom );
-			var newY = (part.y + elem.y * part.zoom );
+			var newX = (part.x + elem.x * part.zoom);
+			var newY = (part.y + elem.y * part.zoom);
 			draw(newX, newY, part.zoom, part.color);
 		});
 	});
+
+	// draw selectedPart again, to always draw on top of all elements
+	if (selectedPart != null) {
+		selectedPart.elementList.forEach(function(elem) {
+			var newX = (selectedPart.x + elem.x * selectedPart.zoom);
+			var newY = (selectedPart.y + elem.y * selectedPart.zoom);
+			draw(newX, newY, selectedPart.zoom, selectedPart.color);
+		})
+	}
+
 }
 
 function breakGridDown() {
 	var minSize = 1;
-	var maxSize = Math.floor((gridX * gridY) * 0.4);
+	var maxSize = Math.floor((gridX * gridY) * 0.7);
 
-	var tempGrid = grid;
+	// var [] tempGrid = grid.clone();
+
+	var tempGrid = jQuery.extend(true, [], grid);
 	var slotNum = 0;
 	var tempParts = [];
 
@@ -421,6 +469,7 @@ function breakGridDown() {
 		}
 		parts.push(newPart);
 	});
+	randomizeSlots(slotNum);
 }
 
 function normalizeParts(elemList, start) {
@@ -442,15 +491,15 @@ function normalizeParts(elemList, start) {
 		west = x > west ? x : west;
 		res.push(new element(x, y));
 	});
-	
+
 	var vertDiff = 0;
 	res.forEach(function(elem) {
 		vertDiff = vertDiff < elem.y ? vertDiff : elem.y;
 	});
-	
-	for(i = 0; i < res.length; i++ ){
+
+	for (i = 0; i < res.length; i++) {
 		res[i].y -= vertDiff;
-		
+
 	}
 	return res;
 }
@@ -555,154 +604,323 @@ function chooseNext(neighbours, curr) {
 	return res;
 }
 
+var startContactTime;
+var endContactTime;
 
-function mouseDown(e){
-	var selectedPart;
-	e.preventDefault();
-    e.stopPropagation();
-    
-    var mx = parseInt(e.clientX - offsetX);
-    var my = parseInt(e.clientY - offsetY);
-      
-    isMouseClick = false;
-    
-    //Funktion die die Elemente wieder normal groß macht
-    
-    parts.forEach(function(part){
-    	part.elementList.forEach(function(elem) { 
-    		//elem.x und elem.y sollten eigentlich die wirkliche Position der Elemente sein
-    		//elemnetWidth und elementHeight sind die größe der Elemente
-    		if(mx > elem.x && mx < elem.x + elementWidth && my > elem.y && my < elem.y + elementHeight){
-    			isMouseClick = true;
-    			selectedPart = part;
-    		}
-    	});
-	});
-    if(selectedPart != undefined){
-    	selectedPart.elementList.forEach(function(elem){
-    		elem.isDragging = true;
-    	});
-    }
-    
-	
-    startX = mx;
-    startY = my;
-}
-
-function mouseMove(e){
-	if(isMouseClick){
-
-		e.preventDefault();
-	    e.stopPropagation();
-	    
-	    var mx = parseInt(e.clientX - offsetX);
-	    var my = parseInt(e.clientY - offsetY);
-	    
-	    var dx = mx - startX;
-	    var dy = my - startY;
-	    
-	    parts.forEach(function(part){
-	    	part.elementList.forEach(function(elem) {
-	    		if(elem.isDragging){
-	    			//auch hier brauch man die wahre Position der Elemente
-	    			elem.x += dx;
-	    			elem.y += dy;
-	    		}
-	    	});
-		});
-	    
-	    drawAll();
-	    
-	    startX = mx;
-	    startY = my;
-	}
-}
-
-function mouseUp(e){
-	e.preventDefault();
-    e.stopPropagation();
-
+function startContact(mx, my) {
 	isMouseClick = false;
-	parts.forEach(function(part){
+	var found = false;
+
+//	for (var i = 0; i < slots.length; i++) {
+//		if (inbetween(mx, slots[i].x, slots[i].x + slots[i].sizeX)
+//				&& inbetween(my, slots[i].y, slots[i].y + slots[i].sizeY)) {
+//			parts.forEach(function(part) {
+//				if (part.slot == i) {
+//					selectedPart = part;
+//				}
+//			});
+////			return;
+//		}
+//	}
+	if (selectedPart == null) {
+		parts.forEach(function(part) {
+			part.moving = false;
+			if (found) {
+				startContactTime = new Date().getTime();
+				return;
+			}
+			var slotClicked = false;
+			if(part.gridX == null && (inbetween(mx, slots[part.slot].x, slots[part.slot].x + slots[part.slot].sizeX)
+					&& inbetween(my, slots[part.slot].y, slots[part.slot].y + slots[part.slot].sizeY))){
+				slotClicked = true;
+			}
+			if ((my > part.y
+					&& my < part.y + (part.partDimensions[1] * part.zoom)
+					&& mx > part.x
+					&& mx < part.x + (part.partDimensions[0] * part.zoom))
+					||slotClicked) {
+				part.elementList
+						.forEach(function(element) {
+							if (slotClicked || my > part.y + element.y * part.zoom
+									&& my < part.y + element.y * part.zoom
+											+ part.zoom
+									&& mx > part.x + element.x * part.zoom
+									&& mx < part.x + element.x * part.zoom
+											+ part.zoom) {
+								// add drag'n drop here
+								// console.log(grid);
+								part.moving = true;
+								selectedPart = part;
+
+								// can.addEventListener('mousemove',
+								// mouseHandler);
+
+								found = true;
+
+							}
+						})
+			}
+		});
+	}
+	if (selectedPart != null) {
+		if (selectedPart.gridX != null) {
+			selectedPart.elementList
+					.forEach(function(elem) {
+						grid[selectedPart.gridX + elem.x][selectedPart.gridY
+								+ elem.y] = 0;
+
+					});
+			selectedPart.gridX = null;
+			selectedPart.gridY = null;
+		}
+		isMouseClick = true;
+	}
+	update();
+}
+
+function movementAction(mouseX, mouseY) {
+	var tempX = mouseX
+			- ((selectedPart.partDimensions[0] * selectedPart.zoom) / 2);
+	var tempY = mouseY
+			- ((selectedPart.partDimensions[1] * selectedPart.zoom) / 2);
+
+	selectedPart.setPos(tempX, tempY, getZoom(mouseX, mouseY));
+}
+
+function endContact() {
+	// setPartsinSlot();
+	endContactTime = new Date().getTime();
+	isMouseClick = false;
+	parts.forEach(function(part) {
+		// part.moving = false;
 		part.elementList.forEach(function(elem) {
-			elem.isDragging=false;
+			elem.isDragging = false;
 		});
 	});
+	if (endContactTime - startContactTime <= 1000) {
+		// rotate(selectedPart)
+	}
+	checkPosition(selectedPart);
+	selectedPart = null;
 }
 
-
-
-function touchStart(e){
-	var selectedPart;
+function mouseDown(e) {
+	// var selectedPart;
 	e.preventDefault();
-    e.stopPropagation();
-    
-    
-    var mx = parseInt(e.touches[0].pageX);
-    var my = parseInt(e.touches[0].pageY);
-    isTouch = false;
-    
-  //Funktion die die Elemente wieder normal groß macht
-    
-    parts.forEach(function(part){
-    	part.elementList.forEach(function(elem) {
-    		//elem.x und elem.y sollten eigentlich die wirkliche Position der Elemente sein
-    		//elemnetWidth und elementHeight sind die größe der Elemente 
-    		if(mx > elem.x && mx < elem.x + elementWidth && my > elem.y && my < elem.y + elementHeight){
-    			isTouch = true;
-    			selectedPart = part;
-    		}
-    	});
-	});
+	e.stopPropagation();
 
-    if(selectedPart != undefined){
-    	selectedPart.elementList.forEach(function(elem){
-    		elem.isDragging = true;
-    	});
-    }
-    startX = mx;
-    startY = my;
+	var mx = parseInt(e.clientX - offsetX);
+	var my = parseInt(e.clientY - offsetY);
+
+	startContact(mx, my);
+
+	// Funktion die die Elemente wieder normal groß macht
+
+	// parts.forEach(function(part) {
+	// part.elementList.forEach(function(elem) {
+	// // elem.x und elem.y sollten eigentlich die wirkliche Position der
+	// // Elemente sein
+	// // elemnetWidth und elementHeight sind die größe der Elemente
+	// if (mx > elem.x && mx < elem.x + elementWidth && my > elem.y
+	// && my < elem.y + elementHeight) {
+	// isMouseClick = true;
+	// selectedPart = part;
+	// }
+	// });
+	// });
+	// if (selectedPart != undefined) {
+	// selectedPart.elementList.forEach(function(elem) {
+	// elem.isDragging = true;
+	// });
+	// }
+	//
+	// startX = mx;
+	// startY = my;
+
 }
 
-function touchMove(e){
-	if(isTouch){
-		e.preventDefault();
-	    e.stopPropagation();
-	    
-	    var mx = parseInt(e.touches[0].pageX);
-	    var my = parseInt(e.touches[0].pageY);
-	    
-	    var dx = mx - startX;
-	    var dy = my - startY;
-	    
-	    parts.forEach(function(part){
-	    	part.elementList.forEach(function(elem) {
-	    		if(elem.isDragging){
-	    			//auch hier brauch man die wahre Position der Elemente
-	    			elem.x += dx;
-	    			elem.y += dy;
-	    		}
-	    	});
-		});
-	    
-	    drawAll();
-	    
-	    startX = mx;
-	    startY = my;
+function mouseMove(e) {
+	if (isMouseClick) {
+		var mouseX = e.pageX;
+		var mouseY = e.pageY;
+		movementAction(mouseX, mouseY);
+		// var tempX = mouseX
+		// - ((selectedPart.partDimensions[0] * selectedPart.zoom) / 2);
+		// var tempY = mouseY
+		// - ((selectedPart.partDimensions[1] * selectedPart.zoom) / 2);
+		//
+		// selectedPart.setPos(tempX, tempY, getZoom(mouseX, mouseY));
+
+		// e.preventDefault();
+		// e.stopPropagation();
+		//
+		// var mx = parseInt(e.clientX - offsetX);
+		// var my = parseInt(e.clientY - offsetY);
+		//
+		// var dx = mx - startX;
+		// var dy = my - startY;
+		//
+		// parts.forEach(function(part) {
+		// part.elementList.forEach(function(elem) {
+		// if (elem.isDragging) {
+		// // auch hier brauch man die wahre Position der Elemente
+		// elem.x += dx;
+		// elem.y += dy;
+		// }
+		// });
+		// });
+		//
+		// drawAll();
+		//
+		// startX = mx;
+		// startY = my;
 	}
 }
 
-function touchEnd(e){
-	e.preventDefault();
-    e.stopPropagation();
-    
-	isTouch = false;
-	parts.forEach(function(part){
-		part.elementList.forEach(function(elem) {
-			elem.isDragging=false;
-		});
-	});
+function checkPosition(part) {
+	if (part == null)
+		return;
+	if (part.x < gapLeft - part.zoom * 0.4
+			|| part.y < gapTop - part.zoom * 0.4
+			|| part.x + (part.partDimensions[0] * part.zoom) > (can.width - gapRight)
+					+ part.zoom * 0.4
+			|| part.y + (part.partDimensions[1] * part.zoom) > (can.height - gapBottom)
+					+ part.zoom * 0.4) {
+		setPartInSlot(part);
+		return;
+	}
+	var blocked = false;
+	for (var i = 0; i < gridX; i++) {
+		if (inbetween(part.x, (i * fieldWidth + gapLeft) - fieldWidth * 0.4, (i
+				* fieldWidth + gapLeft + fieldWidth)
+				- fieldWidth * 0.4)) {
+			for (var j = 0; j < gridY; j++) {
+				if (inbetween(part.y, (j * fieldHeight + gapTop) - fieldHeight
+						* 0.4, (j * fieldHeight + gapTop + fieldHeight)
+						- fieldHeight * 0.4)) {
+					part.setPos((i * fieldWidth + gapLeft), j * fieldHeight
+							+ gapTop);
+					part.elementList.forEach(function(elem) {
+						if (grid[i + elem.x][j + elem.y] == 1) {
+							blocked = true;
+							
+						}
+					});
+					if(blocked){
+						setPartInSlot(part);
+						return;
+						}
+					part.elementList.forEach(function(elem) {
+						grid[i + elem.x][j + elem.y] = 1;
+						part.gridX = i;
+						part.gridY = j;
+					});
+					// alert(i + " " + j);
+					// return;
+				}
+			}
+		}
+	}
+
+	// alert(part.x+" "+part.y+"\n"+gridX*part.zoom+" "+gridY*part.zoom);
 }
 
+function inbetween(num, min, max) {
+	if (num >= min && num <= max)
+		return true;
+	else
+		return false;
+}
 
+function mouseUp(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	endContact();
+	// // setPartsinSlot();
+	// isMouseClick = false;
+	// parts.forEach(function(part) {
+	// // part.moving = false;
+	// part.elementList.forEach(function(elem) {
+	// elem.isDragging = false;
+	// });
+	// });
+	// checkPosition(selectedPart);
+	// selectedPart = null;
+}
 
+function touchStart(e) {
+	var selectedPart;
+	e.preventDefault();
+	e.stopPropagation();
+
+	var mx = parseInt(e.touches[0].pageX);
+	var my = parseInt(e.touches[0].pageY);
+
+	startContact(mx, my)
+	// isTouch = false;
+	//
+	// // Funktion die die Elemente wieder normal groß macht
+	//
+	// parts.forEach(function(part) {
+	// part.elementList.forEach(function(elem) {
+	// // elem.x und elem.y sollten eigentlich die wirkliche Position der
+	// // Elemente sein
+	// // elemnetWidth und elementHeight sind die größe der Elemente
+	// if (mx > elem.x && mx < elem.x + elementWidth && my > elem.y
+	// && my < elem.y + elementHeight) {
+	// isTouch = true;
+	// selectedPart = part;
+	// }
+	// });
+	// });
+	//
+	// if (selectedPart != undefined) {
+	// selectedPart.elementList.forEach(function(elem) {
+	// elem.isDragging = true;
+	// });
+	// }
+	// startX = mx;
+	// startY = my;
+}
+
+function touchMove(e) {
+	if (isMouseClick) {
+		e.preventDefault();
+		e.stopPropagation();
+
+		var mx = parseInt(e.touches[0].pageX);
+		var my = parseInt(e.touches[0].pageY);
+
+		movementAction(mx, my)
+
+		// var dx = mx - startX;
+		// var dy = my - startY;
+		//
+		// parts.forEach(function(part) {
+		// part.elementList.forEach(function(elem) {
+		// if (elem.isDragging) {
+		// // auch hier brauch man die wahre Position der Elemente
+		// elem.x += dx;
+		// elem.y += dy;
+		// }
+		// });
+		// });
+		//
+		// drawAll();
+		//
+		// startX = mx;
+		// startY = my;
+	}
+}
+
+function touchEnd(e) {
+	e.preventDefault();
+	e.stopPropagation();
+	endContact();
+	// isTouch = false;
+	// parts.forEach(function(part) {
+	// part.elementList.forEach(function(elem) {
+	// elem.isDragging = false;
+	// });
+	// });
+}
